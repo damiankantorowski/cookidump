@@ -20,14 +20,35 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
 
 PAGELOAD_TO = 3
 SCROLL_TO = 1
 MAX_SCROLL_RETRIES = 5
 
-def startBrowser(chrome_driver_path):
+def startBrowser(chrome_driver_path, pdf_path):
 	"""Starts browser with predefined parameters"""
-	chrome_options = Options()
+	chrome_options = webdriver.ChromeOptions()
+	appState = {
+    "recentDestinations": [
+        {
+            "id": "Save as PDF",
+            "origin": "local"
+        }
+    ],
+    "selectedDestinationId": "Save as PDF",
+    "version": 2,
+	"isHeaderFooterEnabled": False,
+    "isLandscapeEnabled": False,
+	"pageSize": 'A4', 
+	"marginsType": 2,
+	"scalingType": 3,
+    "scaling": "55"
+	}
+	profile = {"printing.print_preview_sticky_settings.appState": json.dumps(appState),
+           "savefile.default_directory": pdf_path}
+	chrome_options.add_experimental_option('prefs', profile)
+	chrome_options.add_argument('--kiosk-printing')
 	if "GOOGLE_CHROME_PATH" in os.environ:
 		chrome_options.binary_location = os.getenv('GOOGLE_CHROME_PATH')
 	#chrome_options.add_argument('--headless')
@@ -85,17 +106,23 @@ def recipeToJSON(browser, recipeID):
 
 	return recipe
 
-def run(webdriverfile, outputdir, separate_json):
+def run(webdriverfile, outputdir, separate_json, export_pdf):
 	"""Scraps all recipes and stores them in html"""
 	print('[CD] Welcome to cookidump, starting things off...')
 	# fixing the outputdir parameter, if needed
 	if outputdir[-1:][0] != '/': outputdir += '/'
-
+	
+	custom_output_dir = input("[CD] enter the directory name to store the results (ex. vegeratian): ")
+	if custom_output_dir : outputdir += '{}/'.format(custom_output_dir)
+	
+	pdf_path = outputdir + '/recipesPDF'
+	if not os.path.exists(pdf_path):
+		os.makedirs(pdf_path)
+	
 	locale = str(input('[CD] Complete the website domain: https://cookidoo.'))
 	baseURL = 'https://cookidoo.{}/'.format(locale)
-
-	brw = startBrowser(webdriverfile)
-
+	brw = startBrowser(webdriverfile, pdf_path)
+	
 	# opening the home page
 	brw.get(baseURL)
 	time.sleep(PAGELOAD_TO)
@@ -111,13 +138,7 @@ def run(webdriverfile, outputdir, separate_json):
 	# possible filters done here
 	reply = input('[CD] Set your filters, if any, and then enter y to continue: ')
 
-	custom_output_dir = input("[CD] enter the directory name to store the results (ex. vegeratian): ")
-	if custom_output_dir : outputdir += '{}/'.format(custom_output_dir)
-
 	print('[CD] Proceeding with scraping')
-
-	# removing the base href header
-	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'base'))
 
 	# removing the name
 	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-transclude'))
@@ -149,6 +170,37 @@ def run(webdriverfile, outputdir, separate_json):
 
 	print('Scrolling [{}/{}]'.format(currentElements, elementsToBeFound))
 
+	# Cleanup
+	for s in brw.find_elements(By.TAG_NAME, 'script'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'page-header'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'l-content'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'keyboard-container'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'filter-button'))
+	for s in brw.find_elements(By.TAG_NAME, 'sort-by'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'filter-modal'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-toast'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'search-algolia'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'search-infinite-scroll'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-footer'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-tos-privacy-update'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-feedback')) 
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-consent-sdk'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-style'))  
+	for s in brw.find_elements(By.TAG_NAME, 'core-context-menu'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+	for s in brw.find_elements(By.TAG_NAME, 'core-error-page'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+	for s in brw.find_elements(By.TAG_NAME, 'noscript'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+	for s in brw.find_elements(By.TAG_NAME, 'img'):
+		brw.execute_script("arguments[0].removeAttribute(arguments[1]);", s, 'srcset')
+		brw.execute_script("arguments[0].removeAttribute(arguments[1]);", s, 'sizes')
+		brw.execute_script("arguments[0].setAttribute(arguments[1],arguments[2]);", s, 'style','max-width:100%;')
+	brw.execute_script('var element=document.querySelector("link[rel=\'icon\']");element.parentNode.removeChild(element);')
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'base'))
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'filters-header'))
+	
+	brw.execute_script('var element=document.getElementsByTagName("link")[2];element.parentNode.removeChild(element);')
+	brw.execute_script('var element=document.getElementsByTagName("link")[1];element.parentNode.removeChild(element);')
+	brw.execute_script('var element=document.getElementsByTagName("link")[0];element.parentNode.removeChild(element);')
+
 	# saving all recipes urls
 	els = brw.find_elements(By.CLASS_NAME, 'link--alt')
 	recipesURLs = []
@@ -157,12 +209,7 @@ def run(webdriverfile, outputdir, separate_json):
 		recipesURLs.append(recipeURL)
 		recipeID = recipeURL.split('/')[-1:][0]
 		brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", el, 'href', './recipes/{}.html'.format(recipeID))
-
-	# removing search bar
-	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'search-bar'))
-
-	# removing scripts
-	for s in brw.find_elements(By.TAG_NAME, 'script'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+		brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", el.find_element(By.TAG_NAME, 'img'), 'src','images/{}.jpg'.format(recipeID))
 
 	# saving the list to file
 	listToFile(brw, outputdir)
@@ -182,26 +229,53 @@ def run(webdriverfile, outputdir, separate_json):
 			recipeID = u.split('/')[-1:][0]
 			# opening recipe url
 			brw.get(recipeURL)
-			time.sleep(PAGELOAD_TO)
+			WebDriverWait(brw, PAGELOAD_TO).until(lambda driver: brw.execute_script('return document.readyState') == 'complete')
 			# removing the base href header
 			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'base'))
 			except: pass
 			# removing the name
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-transclude'))
-			# changing the top url
-			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.CLASS_NAME, 'page-header__home'), 'href', '../../index.html')
+			# cleanup
+			for s in brw.find_elements(By.TAG_NAME, 'script'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+			for s in brw.find_elements(By.TAG_NAME, 'noscript'): brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", s)
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'page-header'))
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'button--primary'))
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'recipe-card__btn-line--secondary'))
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'core-scrollbar__content'))
+			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'in-collections'))
+			except: pass
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'core-share'))
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'additional-categories'))
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-footer'))
+			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-toast'))
+			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'accessories-banner'))
+			except: pass
+			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-banner-sdk'))
+			except: pass
+			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-style'))
+			except: pass
+			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'tm-versions-modal'))
+			except: pass
+			brw.execute_script('var element=document.getElementById("alternative-recipes");element.parentNode.removeChild(element);')
+			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.ID, 'serving-size-modal-trigger'), 'class', 'core-feature-icons__item')
+			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.ID, 'rc-icon-quantity-icon'), 'class', 'core-feature-icons__icon icon icon--servings')
+			
 			
 			# saving recipe image
 			img_url = brw.find_element(By.ID, 'recipe-card__image-loader').find_element(By.TAG_NAME, 'img').get_attribute('src')
 			local_img_path = imgToFile(outputdir, recipeID, img_url)
 
 			# change the image url to local
-			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.CLASS_NAME, 'core-tile__image'), 'srcset', '')
-			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.CLASS_NAME, 'core-tile__image'), 'src', local_img_path)
+			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.XPATH, '//*[@id="recipe-card__image-loader"]/img'), 'srcset', '')
+			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.XPATH, '//*[@id="recipe-card__image-loader"]/img'), 'src', local_img_path)
 			
 			# saving the file
 			recipeToFile(brw, '{}recipes/{}.html'.format(outputdir, recipeID))
-
+			
+			# exporting webpage as pdf
+			if export_pdf:
+				brw.execute_script('window.print();')
+			
 			# extracting JSON info
 			recipe = recipeToJSON(brw, recipeID)
 
@@ -233,8 +307,9 @@ def run(webdriverfile, outputdir, separate_json):
 
 if  __name__ =='__main__':
 	parser = argparse.ArgumentParser(description='Dump Cookidoo recipes from a valid account')
+	parser.add_argument('-s', '--separate-json', action='store_true', help='Create a separate JSON file for each recipe; otherwise, a single data file will be generated')
+	parser.add_argument('-p', '--export-pdf', action='store_true', help='Save each recipe as a PDF')
 	parser.add_argument('webdriverfile', type=str, help='the path to the Chrome WebDriver file')
 	parser.add_argument('outputdir', type=str, help='the output directory')
-	parser.add_argument('-s', '--separate-json', action='store_true', help='Create a separate JSON file for each recipe; otherwise, a single data file will be generated')
 	args = parser.parse_args()
-	run(args.webdriverfile, args.outputdir, args.separate_json)
+	run(args.webdriverfile, args.outputdir, args.separate_json, args.export_pdf)
