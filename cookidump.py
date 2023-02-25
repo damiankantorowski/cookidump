@@ -116,7 +116,7 @@ def run(webdriverfile, outputdir, separate_json, export_pdf):
 	if custom_output_dir : outputdir += '{}/'.format(custom_output_dir)
 	
 	pdf_path = outputdir + '/recipesPDF'
-	if not os.path.exists(pdf_path):
+	if export_pdf and not os.path.exists(pdf_path):
 		os.makedirs(pdf_path)
 	
 	locale = str(input('[CD] Complete the website domain: https://cookidoo.'))
@@ -196,7 +196,7 @@ def run(webdriverfile, outputdir, separate_json, export_pdf):
 	brw.execute_script('var element=document.querySelector("link[rel=\'icon\']");element.parentNode.removeChild(element);')
 	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'base'))
 	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'filters-header'))
-	
+	brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.XPATH, '/html/body/div/div/div[1]'))
 	brw.execute_script('var element=document.getElementsByTagName("link")[2];element.parentNode.removeChild(element);')
 	brw.execute_script('var element=document.getElementsByTagName("link")[1];element.parentNode.removeChild(element);')
 	brw.execute_script('var element=document.getElementsByTagName("link")[0];element.parentNode.removeChild(element);')
@@ -242,24 +242,26 @@ def run(webdriverfile, outputdir, separate_json, export_pdf):
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'button--primary'))
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'recipe-card__btn-line--secondary'))
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'core-scrollbar__content'))
-			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'in-collections'))
-			except: pass
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'core-share'))
-			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'additional-categories'))
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-footer'))
 			brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'core-toast'))
-			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'accessories-banner'))
-			except: pass
-			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-banner-sdk'))
-			except: pass
-			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-style'))
-			except: pass
-			try: brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'tm-versions-modal'))
-			except: pass
 			brw.execute_script('var element=document.getElementById("alternative-recipes");element.parentNode.removeChild(element);')
 			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.ID, 'serving-size-modal-trigger'), 'class', 'core-feature-icons__item')
+			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.ID, 'rc-icon-quantity-icon'), 'style', 'margin-left: 1rem')
 			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.ID, 'rc-icon-quantity-icon'), 'class', 'core-feature-icons__icon icon icon--servings')
-			
+			brw.execute_script('document.getElementsByClassName("l-header-offset-small")[0].classList.remove("l-header-offset-small");')
+			try: 
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'in-collections'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'additional-categories'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.TAG_NAME, 'accessories-banner'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-banner-sdk'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.ID, 'onetrust-style'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.CLASS_NAME, 'tm-versions-modal'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.XPATH, '//*[@id="recipe-content-right"]/hr[2]'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.XPATH, '//*[@id="recipe-content-right"]/hr[3]'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.XPATH, '//*[@id="recipe-content-right"]/hr[5]'))
+				brw.execute_script("var element = arguments[0];element.parentNode.removeChild(element);", brw.find_element(By.XPATH, '//*[@id="recipe-content-right"]/hr[1]'))
+			except: pass
 			
 			# saving recipe image
 			img_url = brw.find_element(By.ID, 'recipe-card__image-loader').find_element(By.TAG_NAME, 'img').get_attribute('src')
@@ -268,6 +270,11 @@ def run(webdriverfile, outputdir, separate_json, export_pdf):
 			# change the image url to local
 			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.XPATH, '//*[@id="recipe-card__image-loader"]/img'), 'srcset', '')
 			brw.execute_script("arguments[0].setAttribute(arguments[1], arguments[2]);", brw.find_element(By.XPATH, '//*[@id="recipe-card__image-loader"]/img'), 'src', local_img_path)
+			
+			#local css
+			brw.execute_script('var element=document.getElementsByTagName("link")[0];element.setAttribute(arguments[0], arguments[1]);','href','../../css/core.css')
+			brw.execute_script('var element=document.getElementsByTagName("link")[1];element.setAttribute(arguments[0], arguments[1]);','href','../../css/bundle.css')
+			brw.execute_script('var element=document.getElementsByTagName("link")[4];element.setAttribute(arguments[0], arguments[1]);','href','../../css/recipe.css')
 			
 			# saving the file
 			recipeToFile(brw, '{}recipes/{}.html'.format(outputdir, recipeID))
